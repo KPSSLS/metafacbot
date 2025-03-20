@@ -1,0 +1,8 @@
+services:
+  bot:
+    restart: always
+    image: $REGISTRY_URL/$REGISTRY_USERNAME/$APP_NAME:latest
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+    volumes:
+      - ./config.json:/app/config.json
