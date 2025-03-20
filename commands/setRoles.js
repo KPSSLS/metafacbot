@@ -8,7 +8,8 @@ const factions = [
     { name: 'bloods', description: 'Установить роль для Bloods' },
     { name: 'moders', description: 'Установить роль для Moders' },
     { name: 'revive', description: 'Установить роль для Revive' },
-    { name: 'managment', description: 'Установить роль для Management' }
+    { name: 'managment', description: 'Установить роль для Management' },
+    { name: 'lider', description: 'Установить роль для уведомлений об откате' }
 ];
 
 module.exports = factions.map(faction => ({

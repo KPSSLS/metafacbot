@@ -482,33 +482,10 @@ module.exports = {
                         return;
                     }
 
-                    // Проверяем роль модератора
-                    const modRoleId = state.rolesManager.getRole('moders');
-                    if (!modRoleId) {
-                        await interaction.reply({
-                            content: 'Роль модератора не установлена! Используйте /уроmoders',
-                            ephemeral: true
-                        });
-                        return;
-                    }
-
-                    const modRole = await interaction.guild.roles.fetch(modRoleId);
-                    if (!modRole) {
-                        await interaction.reply({
-                            content: 'Не удалось найти роль модератора',
-                            ephemeral: true
-                        });
-                        return;
-                    }
-
-                    // Проверяем, есть ли у пользователя роль модератора
-                    if (!interaction.member.roles.cache.has(modRoleId)) {
-                        await interaction.reply({
-                            content: 'У вас нет прав для запроса отката!',
-                            ephemeral: true
-                        });
-                        return;
-                    }
+                    // Получаем роль лидера
+                    const liderRoleId = state.rolesManager.getRole('lider');
+                    const liderRole = liderRoleId ? await interaction.guild.roles.fetch(liderRoleId) : null;
+                    const roleMention = liderRole ? `${liderRole}` : '@everyone';
 
                     // Сохраняем запрос отката
                     state.addRollbackRequest(interaction.user.id, {
@@ -517,7 +494,7 @@ module.exports = {
                     });
 
                     // Отправляем сообщение в канал откатов
-                    const rollbackMessage = `${modRole} Куратор ${interaction.user} запрашивает видео откат с поставки. Предоставьте его в личные сообщения куратору!`;
+                    const rollbackMessage = `${roleMention} Пользователь ${interaction.user} запрашивает видео откат с поставки. Предоставьте его в личные сообщения!`;
                     
                     await rollbackChannel.send({
                         content: rollbackMessage,
