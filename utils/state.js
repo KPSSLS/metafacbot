@@ -13,6 +13,7 @@ class BotState {
         this.deliveries = new Map();
         this.rolesManager = new RolesManager();
         this.rollbackRequests = new Map();
+        this.reports = new Map(); // Добавляем Map для хранения отчетов
         
         // Загружаем сохраненные настройки при создании экземпляра
         this.loadConfig();
@@ -107,6 +108,19 @@ class BotState {
 
     clearRollbackRequest(userId) {
         this.rollbackRequests.delete(userId);
+    }
+
+    // Методы для работы с отчетами
+    addReport(reportId, data) {
+        this.reports.set(reportId, data);
+    }
+
+    getReport(reportId) {
+        return this.reports.get(reportId);
+    }
+
+    removeReport(reportId) {
+        return this.reports.delete(reportId);
     }
 }
 
