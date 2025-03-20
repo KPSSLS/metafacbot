@@ -110,6 +110,11 @@ class BotState {
         this.rollbackRequests.delete(userId);
     }
 
+    // Алиас для совместимости
+    addRollbackRequest(userId, request) {
+        return this.setRollbackRequest(userId, request);
+    }
+
     // Методы для работы с отчетами
     addReport(reportId, data) {
         this.reports.set(reportId, data);
