@@ -25,16 +25,18 @@ module.exports = factions.map(faction => ({
         try {
             const role = interaction.options.getRole('роль');
             state.rolesManager.setRole(faction.name, role.id);
+            // Сохраняем конфигурацию после установки роли
+            state.saveConfig();
 
             await interaction.reply({
                 content: `Роль для ${faction.name} успешно установлена: ${role.name}`,
-                ephemeral: true
+                flags: [1 << 6]
             });
         } catch (error) {
             console.error(`Ошибка установки роли для ${faction.name}:`, error);
             await interaction.reply({
                 content: `Произошла ошибка при установке роли для ${faction.name}`,
-                ephemeral: true
+                flags: [1 << 6]
             });
         }
     }

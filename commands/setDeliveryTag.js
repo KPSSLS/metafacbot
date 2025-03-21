@@ -11,10 +11,11 @@ module.exports = {
 
     async execute(interaction, state) {
         const tag = interaction.options.getRole('тег');
-        state.setDeliveryTag(tag);
+        // Сохраняем строковое представление тега (упоминание роли)
+        state.setDeliveryTag(tag.toString());
         await interaction.reply({ 
             content: `Тег для поставок установлен: ${tag}`,
-            ephemeral: true
+            flags: [1 << 6]
         });
     }
 };

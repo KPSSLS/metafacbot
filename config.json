@@ -1,5 +1,14 @@
 {
   "deliveryChannelId": "1349783964453306458",
-  "deliveryTag": null,
-  "webhookUrl": null
+  "deliveryTag": "<@&1116841860166594719>",
+  "webhookUrl": null,
+  "roles": {
+    "vagos": "1116841860166594722",
+    "ballas": "1116841860166594723",
+    "lider": "1116841860166594719",
+    "marabunta": "1116841860166594724",
+    "bloods": "1116841860166594721",
+    "famillies": "1116841860183359609",
+    "managment": "1116841860166594718"
+  }
 }

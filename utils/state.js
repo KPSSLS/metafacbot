@@ -30,6 +30,10 @@ class BotState {
                 this.rollbackChannelId = data.rollbackChannelId;
                 this.deliveryTag = data.deliveryTag;
                 this.webhookUrl = data.webhookUrl;
+                // Загружаем роли
+                if (data.roles) {
+                    this.rolesManager.loadFromObject(data.roles);
+                }
                 console.log('Конфигурация успешно загружена');
             }
         } catch (error) {
@@ -45,7 +49,9 @@ class BotState {
                 reportChannelId: this.reportChannelId,
                 rollbackChannelId: this.rollbackChannelId,
                 deliveryTag: this.deliveryTag,
-                webhookUrl: this.webhookUrl
+                webhookUrl: this.webhookUrl,
+                // Сохраняем роли
+                roles: this.rolesManager.toObject()
             };
             fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
             console.log('Конфигурация успешно сохранена');

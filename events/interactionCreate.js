@@ -14,7 +14,7 @@ module.exports = {
                 console.error(error);
                 await interaction.reply({ 
                     content: 'При выполнении команды произошла ошибка!',
-                    ephemeral: true
+                    flags: [1 << 6]
                 });
             }
             return;
@@ -29,7 +29,7 @@ module.exports = {
                 if (!state.deliveryChannelId) {
                     await interaction.reply({ 
                         content: 'Канал для поставок не установлен! Используйте /уканалпоставок',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -38,7 +38,7 @@ module.exports = {
                 if (!deliveryChannel) {
                     await interaction.reply({ 
                         content: 'Не удалось найти канал для поставок! Возможно, он был удален.',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -46,7 +46,6 @@ module.exports = {
                 const embed = new EmbedBuilder()
                     .setTitle('🚛 Новая поставка')
                     .setColor('#FF5733')
-                    .setDescription(state.deliveryTag ? state.deliveryTag.toString() : ' ')
                     .addFields(
                         { 
                             name: '📅 Дата',
@@ -120,6 +119,7 @@ module.exports = {
 
                 // Отправляем сообщение в канал Discord
                 const deliveryMessage = await deliveryChannel.send({
+                    content: state.deliveryTag ? state.deliveryTag : '',
                     embeds: [embed],
                     components: [buttons, reportButton]
                 });
@@ -175,7 +175,7 @@ module.exports = {
 
                 await interaction.reply({ 
                     content: 'Поставка создана!',
-                    ephemeral: true
+                    flags: [1 << 6]
                 });
                 return;
             }
@@ -188,7 +188,7 @@ module.exports = {
                 if (!state.reportChannelId) {
                     await interaction.reply({ 
                         content: 'Канал для отчетов не установлен! Используйте /уканалотчетапоставок',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -197,7 +197,7 @@ module.exports = {
                 if (!reportChannel) {
                     await interaction.reply({ 
                         content: 'Не удалось найти канал для отчетов! Возможно, он был удален.',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -307,71 +307,62 @@ module.exports = {
             if (interaction.customId.startsWith('role-')) {
                 try {
                     const factionId = interaction.customId.replace('role-', '');
-                    console.log('Запрошена роль для фракции:', factionId);
-                    
                     const roleId = state.rolesManager.getRole(factionId);
-                    console.log('Найден ID роли:', roleId);
 
                     if (!roleId) {
-                        console.log('Роль не настроена для фракции:', factionId);
                         await interaction.reply({
-                            content: `Роль для ${factionId} не настроена. Сначала настройте роль командой /уро${factionId}`,
+                            content: `Роль для ${factionId} не настроена.`,
                             ephemeral: true
                         });
                         return;
                     }
 
                     const role = await interaction.guild.roles.fetch(roleId);
-                    console.log('Получена роль из Discord:', role?.name || 'не найдена');
-                    
                     if (!role) {
                         await interaction.reply({
-                            content: `Не удалось найти роль для ${factionId}. Проверьте, что роль существует на сервере и настройте её заново командой /уро${factionId}`,
+                            content: `Не удалось найти роль для ${factionId}.`,
                             ephemeral: true
                         });
                         return;
                     }
 
-                    // Проверяем права бота
-                    const bot = interaction.guild.members.cache.get(interaction.client.user.id);
-                    if (!bot.permissions.has('ManageRoles')) {
-                        await interaction.reply({
-                            content: 'У бота нет прав на управление ролями. Обратитесь к администратору сервера.',
-                            ephemeral: true
-                        });
-                        return;
-                    }
+                    const member = interaction.member;
+                    const hasRole = member.roles.cache.has(roleId);
 
-                    // Проверяем позицию роли бота
-                    const botRole = bot.roles.highest;
-                    if (botRole.position <= role.position) {
-                        await interaction.reply({
-                            content: 'Роль бота должна быть выше выдаваемой роли в списке ролей сервера. Обратитесь к администратору.',
-                            ephemeral: true
-                        });
-                        return;
-                    }
+                    // Получаем все роли фракций из менеджера ролей
+                    const allFactionRoleIds = Array.from(state.rolesManager.getAllRoles().values());
 
-                    // Проверяем, есть ли уже эта роль у пользователя
-                    if (interaction.member.roles.cache.has(roleId)) {
-                        // Если роль уже есть, удаляем её
-                        await interaction.member.roles.remove(roleId);
+                    if (hasRole) {
+                        // Если у пользователя уже есть эта роль - удаляем её
+                        await member.roles.remove(roleId);
                         await interaction.reply({
-                            content: `Роль ${role.name} была убрана.`,
+                            content: `Роль ${role.name} удалена`,
                             ephemeral: true
                         });
                     } else {
-                        // Если роли нет, добавляем её
-                        await interaction.member.roles.add(roleId);
+                        // Проверяем наличие других ролей фракций
+                        const memberRoles = member.roles.cache;
+                        const existingFactionRoles = memberRoles.filter(r => allFactionRoleIds.includes(r.id));
+
+                        if (existingFactionRoles.size > 0) {
+                            await interaction.reply({
+                                content: 'Сначала нужно убрать текущую роль фракции',
+                                ephemeral: true
+                            });
+                            return;
+                        }
+
+                        // Выдаём новую роль
+                        await member.roles.add(roleId);
                         await interaction.reply({
-                            content: `Вы получили роль ${role.name}!`,
+                            content: `Выдана роль ${role.name}`,
                             ephemeral: true
                         });
                     }
                 } catch (error) {
-                    console.error('Ошибка при выдаче роли:', error);
+                    console.error('Ошибка при управлении ролями:', error);
                     await interaction.reply({
-                        content: 'Произошла ошибка при выдаче роли. Проверьте права бота и позицию ролей на сервере.',
+                        content: 'Произошла ошибка при управлении ролями',
                         ephemeral: true
                     });
                 }
@@ -387,7 +378,7 @@ module.exports = {
                 if (!roleId) {
                     await interaction.reply({
                         content: `Роль для ${faction} не установлена! Используйте /уро${faction}`,
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -396,7 +387,7 @@ module.exports = {
                 if (!role) {
                     await interaction.reply({
                         content: `Не удалось найти роль для ${faction}`,
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -411,9 +402,24 @@ module.exports = {
                     interceptField.value = `\`${role.name}\``;
                 }
 
+                // Отключаем все кнопки выбора фракции
+                const buttons = message.components[0];
+                const reportButton = message.components[1];
+                
+                const disabledButtons = new ActionRowBuilder();
+                buttons.components.forEach(button => {
+                    const newButton = ButtonBuilder.from(button);
+                    if (button.customId === interaction.customId) {
+                        newButton.setDisabled(false);
+                    } else {
+                        newButton.setDisabled(true);
+                    }
+                    disabledButtons.addComponents(newButton);
+                });
+
                 await interaction.update({
                     embeds: [embed],
-                    components: message.components
+                    components: [disabledButtons, reportButton]
                 });
                 return;
             }
@@ -462,7 +468,7 @@ module.exports = {
                     if (!reportData) {
                         await interaction.reply({
                             content: 'Не удалось найти информацию о поставке для отката.',
-                            ephemeral: true
+                            flags: [1 << 6]
                         });
                         return;
                     }
@@ -480,14 +486,14 @@ module.exports = {
                     await interaction.reply({
                         content: 'Вы уверены, что хотите запросить откат? Нажмите кнопку ниже для подтверждения.',
                         components: [confirmButton],
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 } catch (error) {
                     console.error('Ошибка при обработке запроса отката:', error);
                     await interaction.reply({
                         content: 'Произошла ошибка при обработке запроса отката.',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
@@ -500,7 +506,7 @@ module.exports = {
                     if (!reportData) {
                         await interaction.reply({
                             content: 'Не удалось найти информацию о поставке для отката.',
-                            ephemeral: true
+                            flags: [1 << 6]
                         });
                         return;
                     }
@@ -509,7 +515,7 @@ module.exports = {
                     if (!state.rollbackChannelId) {
                         await interaction.reply({
                             content: 'Канал для откатов не установлен! Используйте команду для установки канала откатов.',
-                            ephemeral: true
+                            flags: [1 << 6]
                         });
                         return;
                     }
@@ -518,7 +524,7 @@ module.exports = {
                     if (!rollbackChannel) {
                         await interaction.reply({
                             content: 'Не удалось найти канал для откатов! Возможно, он был удален.',
-                            ephemeral: true
+                            flags: [1 << 6]
                         });
                         return;
                     }
@@ -549,7 +555,7 @@ module.exports = {
                     console.error('Ошибка при обработке подтверждения отката:', error);
                     await interaction.reply({
                         content: 'Произошла ошибка при обработке подтверждения отката.',
-                        ephemeral: true
+                        flags: [1 << 6]
                     });
                     return;
                 }
