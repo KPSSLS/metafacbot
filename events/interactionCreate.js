@@ -295,6 +295,9 @@ module.exports = {
                     content: 'Отчет отправлен!',
                     components: []
                 });
+
+                // Удаляем сообщение после отправки отчета
+                await interaction.message.delete();
                 return;
             }
         }
@@ -464,6 +467,44 @@ module.exports = {
                         return;
                     }
 
+                    // Создаем кнопку подтверждения отката
+                    const confirmButton = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('confirm-rollback')
+                                .setLabel('Подтвердить запрос отката')
+                                .setStyle(ButtonStyle.Danger)
+                                .setEmoji('✅')
+                        );
+
+                    await interaction.reply({
+                        content: 'Вы уверены, что хотите запросить откат? Нажмите кнопку ниже для подтверждения.',
+                        components: [confirmButton],
+                        ephemeral: true
+                    });
+                    return;
+                } catch (error) {
+                    console.error('Ошибка при обработке запроса отката:', error);
+                    await interaction.reply({
+                        content: 'Произошла ошибка при обработке запроса отката.',
+                        ephemeral: true
+                    });
+                    return;
+                }
+            }
+
+            // Обработка кнопки подтверждения отката
+            if (interaction.customId === 'confirm-rollback') {
+                try {
+                    const reportData = state.getReport(interaction.message.reference?.messageId);
+                    if (!reportData) {
+                        await interaction.reply({
+                            content: 'Не удалось найти информацию о поставке для отката.',
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
                     // Проверяем, есть ли канал для откатов
                     if (!state.rollbackChannelId) {
                         await interaction.reply({
@@ -489,47 +530,29 @@ module.exports = {
 
                     // Сохраняем запрос отката
                     state.addRollbackRequest(interaction.user.id, {
-                        messageId: interaction.message.id,
+                        messageId: reportData.messageId,
                         embed: reportData.embed
                     });
 
                     // Отправляем сообщение в канал откатов
-                    const rollbackMessage = `${roleMention} Пользователь ${interaction.user} запрашивает видео откат с поставки. Предоставьте его в личные сообщения!`;
-                    
                     await rollbackChannel.send({
-                        content: rollbackMessage,
+                        content: `${roleMention} Новый запрос отката от ${interaction.user}`,
                         embeds: [reportData.embed]
                     });
 
-                    // Отключаем кнопку отката в оригинальном сообщении
-                    const message = await interaction.message.fetch();
-                    if (message.components && message.components.length > 0) {
-                        const disabledButton = ButtonBuilder.from(message.components[0].components[0])
-                            .setDisabled(true);
-
-                        await message.edit({
-                            embeds: message.embeds,
-                            components: [new ActionRowBuilder().addComponents(disabledButton)]
-                        });
-                    }
-
-                    // Отправляем подтверждение
-                    await interaction.reply({
-                        content: `Запрос на откат отправлен в канал ${rollbackChannel}!`,
-                        ephemeral: true
+                    await interaction.update({
+                        content: 'Запрос отката отправлен!',
+                        components: []
                     });
-
-                    // Очищаем запрос отката
-                    state.clearRollbackRequest(interaction.user.id);
-
+                    return;
                 } catch (error) {
-                    console.error('Ошибка отправки запроса отката:', error);
+                    console.error('Ошибка при обработке подтверждения отката:', error);
                     await interaction.reply({
-                        content: 'Произошла ошибка при отправке запроса отката.',
+                        content: 'Произошла ошибка при обработке подтверждения отката.',
                         ephemeral: true
                     });
+                    return;
                 }
-                return;
             }
         }
     }
