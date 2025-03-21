@@ -4,6 +4,15 @@ const https = require('https');
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction, state) {
+        // Проверяем, что команда выполняется на сервере
+        if (!interaction.guild) {
+            await interaction.reply({ 
+                content: 'Команды доступны только на сервере!',
+                ephemeral: true
+            });
+            return;
+        }
+
         if (interaction.isCommand()) {
             const command = interaction.client.commands.get(interaction.commandName);
             if (!command) return;
