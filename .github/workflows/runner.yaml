@@ -48,7 +48,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ env.REGISTRY_URL }}/${{ env.REGISTRY_USERNAME }}/${{ env.REPO_NAME_LOWER }}:latest
+          tags: ${{ env.REGISTRY_URL }}/${{ env.REGISTRY_USERNAME }}/${{ env.REPO_NAME }}:latest
 
   cd-job:
     runs-on: self-hosted
@@ -81,24 +81,24 @@ jobs:
       - name: Create/Open project directory
         shell: bash
         env:
-          PROJECT_DIR: ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME_LOWER }}
+          PROJECT_DIR: ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME }}
         run: mkdir -p $PROJECT_DIR && cd $PROJECT_DIR
 
       - name: Creating a new docker-compose.yaml
         shell: bash
         run: |
-          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME_LOWER }}
+          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME }}
 
           cp ${{ github.workspace }}/docker-compose.prod.yaml docker-compose.yaml
 
           sed -i 's/\$REGISTRY_URL/${{ env.REGISTRY_URL }}/g' docker-compose.yaml
           sed -i 's/\$REGISTRY_USERNAME/${{ env.REGISTRY_USERNAME }}/g' docker-compose.yaml
-          sed -i 's/\$APP_NAME/${{ env.REPO_NAME_LOWER }}/g' docker-compose.yaml
+          sed -i 's/\$APP_NAME/${{ env.REPO_NAME }}/g' docker-compose.yaml
 
-      - name: Create new production .env
+      - name: Creating a new production .env
         shell: bash
         run: |
-          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME_LOWER }}
+          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME }}
 
           cat << EOF > .env
           DISCORD_TOKEN=${{ env.DISCORD_TOKEN }}
@@ -107,7 +107,7 @@ jobs:
       - name: Run services with latest version
         shell: bash
         run: |
-          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME_LOWER }}
+          cd ${{ env.MOUNT_DIR }}/${{ env.REPO_NAME }}
 
           docker compose pull
           docker compose up -d --remove-orphans
